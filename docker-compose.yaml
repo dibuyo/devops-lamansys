@@ -1,0 +1,112 @@
+version: "3.9"  # optional since v1.27.0
+services:
+  traefik:
+      image: "traefik:v2.8"
+      container_name: "traefik"
+      command:
+        - --log.level=DEBUG
+        - --ping=true
+        - --api.insecure=true
+        - --providers.docker=true
+        - --providers.docker.exposedbydefault=false
+        - --providers.file=true
+        - --providers.file.directory=/etc/traefik/dynamic_conf
+        - --entrypoints.web.address=:80
+        - --entrypoints.websecure.address=:443
+        #- --entrypoints.web.http.redirections.entryPoint.to=websecure
+        #- --entrypoints.web.http.redirections.entryPoint.scheme=https
+        #- --entrypoints.web.http.redirections.entrypoint.permanent=true
+        - --entryPoints.web.proxyProtocol.insecure=true
+        - --entryPoints.web.forwardedHeaders.insecure=true
+        #- --metrics.prometheus.buckets=0.1,0.3,1.2,5.0
+        #- --metrics.prometheus.addrouterslabels
+        #- --entrypoints.traefikhub-api.address=:8000
+        - --hub.tls.insecure
+      ports:
+        - 443:443
+        - 80:80
+        - ${TRAEFIK_PORT}:8080
+      volumes:
+        - "./certs:/certs/"
+        - "/var/run/docker.sock:/var/run/docker.sock:ro"
+        - "./docker/traefik/config/:/etc/traefik/dynamic_conf/"
+      networks:
+        frontend:
+          aliases:
+            - traefik
+            - proxy
+  #nginx:
+  #  container_name: proxy
+  #  build:
+  #    context: ./docker/nginx
+  #  ports:
+  #    - 80:80
+  #  volumes:
+  #    - ./src/public:/usr/share/nginx/html
+  #  networks:
+  #    - frontend
+  node:
+    container_name: nodejs
+    build:
+      dockerfile: docker/nodejs/Dockerfile
+      context: .
+    volumes:
+      - ./src/express:/app
+    ports:
+      - 3000:3000
+    networks:
+      - frontend
+  wildfly:
+    container_name: jboss
+    image: quay.io/wildfly/wildfly
+    command: "/opt/jboss/wildfly/bin/standalone.sh -b 0.0.0.0 -bmanagement 0.0.0.0"
+    networks:
+      - frontend
+      - backend
+  mysql:
+    container_name: database
+    image: mysql:5.7
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    ports:
+      - 3306:3306
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - TZ=${WORKSPACE_TIMEZONE}
+      #- MYSQL_DATABASE=${MYSQL_DATABASE}
+      #- MYSQL_USER=${MYSQL_USER}
+      #- MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      #- MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      #- MYSQL_ROOT_HOST=${MYSQL_ROOT_HOST}
+      #- MYSQL_USER_HOST=${MYSQL_USER_HOST}
+    volumes:
+      - ${DATA_PATH_HOST}/mysql:/var/lib/mysql
+    networks:
+      - backend
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${DATA_PATH_HOST}/portainer:/data
+    ports:
+      - 9000:9000
+    networks:
+      - backend
+  adminer:
+    container_name: admindb
+    image: adminer
+    restart: always
+    ports:
+      - 8282:8080
+    networks:
+      - frontend
+networks: 
+  frontend:
+    name: public
+  backend:
+    name: private

@@ -1,0 +1,35 @@
+#Son Pods Atados a un Volumen y crecen de manera controlada y con un indice.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: statefulset-demo
+spec:
+  selector:
+    matchLabels:
+      app: busybox-ejemplo
+  serviceName: "my-frontend"
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: busybox-ejemplo
+    spec:
+      containers:
+      - name: my-frontend
+        image: busybox
+        args:
+        - sleep
+        - infinity
+        volumeMounts:
+        - mountPath: "/data"
+          name: pvc-ejemplo
+  volumeClaimTemplates:
+  - metadata:
+      name: pvc-ejemplo
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi
+      #storageClassName: local-path-pvc

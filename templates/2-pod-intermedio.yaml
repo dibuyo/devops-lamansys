@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  namespace: curso
+spec:
+  containers:
+  - name: nginx
+    image: nginx:alpine
+    env:
+    - name: ENVIRONMENT
+      value: "staging"
+    - name: POD_IP
+      valueFrom:
+        fieldRef:
+          fieldPath: status.hostIP
+    resources:
+      requests: #Inicia Pod, es la garantía
+        memory: "64Mi" #MegaB
+        cpu: "200m" #200 miliCores, 1 Core -> 1000 miliCores
+      limits: #Limitado por el Kernel Linux
+        memory: "128Mi"
+        cpu: "500m" #Medio Core
+    readinessProbe: #Puede probar el Request a ver si esta vivo.
+      httpGet:
+        path: /
+        port: 80
+      initialDelaySeconds: 5 #Tiempo de demora al iniciar las pruebas
+      periodSeconds: 10 #Periodo de Pruebas
+    livenessProbe: #Prueba que el Socker 80 este abierto
+      tcpSocket:
+        port: 80
+      initialDelaySeconds: 15
+      periodSeconds: 20
+    ports:
+    - containerPort: 80

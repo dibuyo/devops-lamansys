@@ -284,3 +284,44 @@ A continuación disponibilizamos un repositorio con la solución de Kubectx y Ku
 [kubectx](https://github.com/ahmetb/kubectx)
 
 ![Kubectx](https://raw.githubusercontent.com/ahmetb/kubectx/master/img/kubectx-demo.gif "kubectx & kubens")
+
+### Helm
+Como instalar Helm sin utilizar el gestor de paquetes.
+
+```bash
+curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get-helm-3 > get_helm.sh
+chmod 700 get_helm.sh
+./get_helm.sh
+```
+
+Como instalar Helm utilizando Brew.
+
+```bash
+brew install helm
+```
+
+Como instalar un repositorio de imagenes de Helm más popular:
+
+```bash
+helm repo add bitnami https://charts.bitnami.com/bitnami
+```
+
+Como instalar un Chart de Helm como redis
+```bash
+helm install redis bitnami/redis
+```
+
+Como instalar odoo como ejemplo.
+
+```bash
+helm install odoo bitnami/odoo --set serviceType=NodePort
+```
+### Como Ejecutar Rancher
+El siguiente comando ejecuta Rancher de manera Local utilizando Docker como plataforma. Donde se instalara una versión reduciza de k3s para la gestion de los servicios de Rancher.
+
+```bash
+docker run -d --restart=unless-stopped \
+  -p 80:80 -p 443:443 \
+  --privileged \
+  rancher/rancher:latest
+```

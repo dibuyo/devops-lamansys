@@ -1,0 +1,36 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: whoami
+  namespace: whoami
+  labels:
+    app: whoami
+  annotations:
+    mesh.traefik.io/traffic-type: "http"
+    mesh.traefik.io/retry-attempts: "2"
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      name: whoami
+  selector:
+    app: whoami
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: whoami-tcp
+  namespace: whoami
+  labels:
+    app: whoami-tcp
+  annotations:
+    mesh.traefik.io/traffic-type: "tcp"
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      name: whoami-tcp
+  selector:
+    app: whoami-tcp

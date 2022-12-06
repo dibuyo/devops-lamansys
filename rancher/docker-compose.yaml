@@ -10,6 +10,8 @@ services:
     ports:
       - 80:80
       - 443:443
+    volumes:
+      - "rancher-data:/var/lib/rancher"
     #environment:
     #  RANCHER_VIRTUAL_HOST: rancher.local
     networks:
@@ -17,7 +19,9 @@ services:
         aliases:
           - rancher.local
     #  VIRTUAL_PORT: 80
-
+volumes:
+  rancher-data:
+  
 networks: 
   code-network:
     name: shared-network

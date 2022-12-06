@@ -1,0 +1,34 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: test-ingress
+  namespace: production
+  labels:
+    app: test-ingress
+    tier: frontend
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/from-to-www-redirect: "true"
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  tls:
+  - hosts:
+    - dominio.com
+    - www.dominio.com
+    secretName: tls-dominio
+  rules:
+  - host: dominio.com
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: test
+          servicePort: 80
+  - host: www.dominio.com
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: test
+          servicePort: 80

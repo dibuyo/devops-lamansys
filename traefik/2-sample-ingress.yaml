@@ -1,0 +1,35 @@
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: web-ar
+  namespace: production
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  entryPoints:
+    - websecure
+    - web
+  routes:
+  - match: Host(`www.dominio.com`) || Host(`dominio.com`)
+    kind: Rule
+    services:
+    - name: test
+      port: 80
+    middlewares:
+      - name: redirect-https
+        namespace: ingress
+      - name: errorpage
+        namespace: ingress
+  tls:
+    secretName: tls-dominio
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: waynilabs-ar-redirect
+  namespace: production
+spec:
+  redirectRegex:
+    regex: ^https://dominio.com/(.*)
+    replacement: https://www.dominio.com.ar/${1}

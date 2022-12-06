@@ -1,0 +1,489 @@
+# Source: traefik/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: ingress
+  name: traefik-ingress-controller
+  labels:
+    app: traefik
+    chart: "traefik-2.2.1"
+    release: "traefik-ingress-controller"
+data:
+  traefik.toml: |
+    logLevel = "info"
+    defaultEntryPoints = ["http","https"]
+    defaultErrorsStatus = "400-599"
+    defaultErrorsBackend = "nginx-errors"
+    defaultErrorsQuery = "/{status}.html"
+    [backends]
+      [backends.error]
+        [backends.error.servers.error]
+        url = "http://10.100.236.200"
+
+    [entryPoints]
+      [entryPoints.web]
+        address = ":80"
+    [entryPoints.websecure]
+      address = ":443"
+
+    [ping]
+    entryPoint = "http"
+
+    [api]
+      entryPoint = "traefik"
+      dashboard = true
+      [api.statistics]
+        recentErrors = 20
+
+    [accessLog]
+      filePath = "/var/log/traefik/access.v2.log"
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: ingressroutes.traefik.containo.us
+  namespace: ingress
+spec:
+  group: traefik.containo.us
+  version: v1alpha1
+  names:
+    kind: IngressRoute
+    plural: ingressroutes
+    singular: ingressroute
+  scope: Namespaced
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: ingressroutetcps.traefik.containo.us
+  namespace: ingress
+spec:
+  group: traefik.containo.us
+  version: v1alpha1
+  names:
+    kind: IngressRouteTCP
+    plural: ingressroutetcps
+    singular: ingressroutetcp
+  scope: Namespaced
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: tlsstores.traefik.containo.us
+  namespace: ingress
+spec:
+  group: traefik.containo.us
+  version: v1alpha1
+  names:
+    kind: TLSStore
+    plural: tlsstores
+    singular: tlsstore
+  scope: Namespaced
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: ingressrouteudps.traefik.containo.us
+  namespace: ingress
+spec:
+  group: traefik.containo.us
+  version: v1alpha1
+  names:
+    kind: IngressRouteUDP
+    plural: ingressrouteudps
+    singular: ingressrouteudp
+  scope: Namespaced
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: middlewares.traefik.containo.us
+  namespace: ingress
+spec:
+  group: traefik.containo.us
+  version: v1alpha1
+  names:
+    kind: Middleware
+    plural: middlewares
+    singular: middleware
+  scope: Namespaced
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.4.1
+  creationTimestamp: null
+  name: middlewaretcps.traefik.containo.us
+spec:
+  group: traefik.containo.us
+  version: v1alpha1
+  names:
+    kind: MiddlewareTCP
+    listKind: MiddlewareTCPList
+    plural: middlewaretcps
+    singular: middlewaretcp
+  scope: Namespaced
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: tlsoptions.traefik.containo.us
+  namespace: ingress
+spec:
+  group: traefik.containo.us
+  version: v1alpha1
+  names:
+    kind: TLSOption
+    plural: tlsoptions
+    singular: tlsoption
+  scope: Namespaced
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: traefikservices.traefik.containo.us
+  namespace: ingress
+spec:
+  group: traefik.containo.us
+  version: v1alpha1
+  names:
+    kind: TraefikService
+    plural: traefikservices
+    singular: traefikservice
+  scope: Namespaced
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: serverstransports.traefik.containo.us
+
+spec:
+  group: traefik.containo.us
+  version: v1alpha1
+  names:
+    kind: ServersTransport
+    plural: serverstransports
+    singular: serverstransport
+  scope: Namespaced
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: traefik
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+      - services
+      - endpoints
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - extensions
+      - networking.k8s.io
+    resources:
+      - ingresses
+      - ingressclasses
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - extensions
+    resources:
+      - ingresses/status
+    verbs:
+      - update
+  - apiGroups:
+      - traefik.containo.us
+    resources:
+      - ingressroutes
+      - ingressroutetcps
+      - ingressrouteudps
+      - middlewares
+      - middlewaretcps
+      - tlsoptions
+      - tlsstores
+      - traefikservices
+      - serverstransports
+    verbs:
+      - get
+      - list
+      - watch
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: traefik
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: traefik
+subjects:
+- kind: ServiceAccount
+  name: traefik
+  namespace: ingress
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: auth
+  namespace: ingress
+spec:
+  basicAuth:
+    secret: traefik-basic-auth
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware 
+metadata:
+  name: redirect-https
+  namespace: ingress
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+    port: "443"
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: traefik
+  namespace: ingress
+  labels:
+    app: traefik
+    chart: traefik-2.2.1
+    release: "traefik-ingress-controller"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: traefik
+      release: traefik-ingress-controller
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: traefik
+        chart: traefik-2.2.1
+        release: "traefik-ingress-controller"
+    spec:
+      serviceAccountName: traefik
+      terminationGracePeriodSeconds: 60
+      containers:
+      - image: traefik:2.7.3
+        name: traefik
+        resources:
+        readinessProbe:
+          httpGet:
+            path: /ping
+            port: 8080
+          failureThreshold: 1
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 2
+        livenessProbe:
+          httpGet:
+            path: /ping
+            port: 8080
+          failureThreshold: 3
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 2
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: AWS_ACCESS_KEY_ID
+          value: "AKIAIGWYZP6ZBRK75DWQ"
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: route53-credentials-secret
+              key: secret-access-key
+        - name: AWS_REGION
+          value: us-west-2
+        volumeMounts:
+        - mountPath: /config
+          name: config
+        - mountPath: /var/log/traefik/
+          name: varlogtraefik
+        #- mountPath: /acme
+        #  name: acme
+        ports:
+        - name: "traefik"
+          containerPort: 8080
+          protocol: TCP
+        - name: "web"
+          containerPort: 80
+          protocol: TCP
+        - name: "websecure"
+          containerPort: 443
+          protocol: TCP
+        args:
+          - --api=true
+          - --api.dashboard=true
+          - --accesslog=true
+          - --accesslog.filepath=/var/log/traefik/access.v2.log
+          - --accesslog.bufferingsize=100
+          - --global.checknewversion=true
+          - --global.sendanonymoususage=true
+          - --entryPoints.traefik.address=:8080
+          - --entryPoints.web.address=:80
+          - --entryPoints.websecure.address=:443
+          - --entryPoints.web.proxyProtocol.trustedIPs=127.0.0.1/32,172.31.0.0/16,192.168.0.0/16
+          - --entryPoints.web.forwardedHeaders.trustedIPs=127.0.0.1/32,172.31.0.0/16,192.168.0.0/16
+          - --entryPoints.websecure.proxyProtocol.trustedIPs=127.0.0.1/32,172.31.0.0/16,192.168.0.0/16
+          - --entryPoints.websecure.forwardedHeaders.trustedIPs=127.0.0.1/32,172.31.0.0/16,192.168.0.0/16
+          - --entrypoints.web.http.redirections.entryPoint.to=websecure
+          - --entrypoints.web.http.redirections.entryPoint.scheme=https
+          - --ping=true
+          - --providers.kubernetescrd
+          - --log.level=INFO
+          - --providers.kubernetesingress=true
+          - --providers.kubernetesingress.ingressclass=traefik
+          - --certificatesresolvers.le.acme.email=certificados@waynimovil.com
+          - --certificatesResolvers.le.acme.dnsChallenge
+          - --certificatesResolvers.le.acme.dnsChallenge.provider=route53
+          #- --certificatesresolvers.le.acme.storage=/acme/acme.json
+          - --certificatesresolvers.le.acme.caserver=https://acme-v02.api.letsencrypt.org/directory
+          - --accesslog.fields.headers.names.User-Agent=redact
+          - --accesslog.fields.headers.names.Authorization=drop
+          - --accesslog.fields.headers.names.Content-Type=keep
+          - --metrics.prometheus=true
+          - --metrics.prometheus.buckets=0.1,0.3,1.2,5.0
+          - --pilot.token=9f2bc994-d5a1-45fa-894e-a2b886133692
+          #- --pilot.token=09045bfa-c9df-43d5-9dac-04e87078e6fc
+          - --providers.kubernetescrd.allowCrossNamespace=true
+          - --providers.file=true
+          - --providers.file.directory=/config/
+          #- --entryPoints.apm.address=:8200
+          #- --traefik.http.middlewares.redirect-https.redirectscheme.scheme=https
+          #- --traefik.http.middlewares.redirect-https.redirectscheme.permanent=true
+          #- --metrics.prometheus.entryPoint=metrics
+          #- --metrics.prometheus.addServicesLabels=true
+          #- --api.insecure
+          #- --entryPoints.web.proxyProtocol.insecure=true
+          #- --entryPoints.web.forwardedHeaders.insecure=true
+          #- "--certificatesresolvers.ssl.acme.httpchallenge=true"
+          #- "--certificatesresolvers.default.acme.storage=acme.json"
+          #- "--certificatesresolvers.default.acme.tlschallenge"
+          #- "--certificatesresolvers.default.acme.email=certificados@waynimovil.com"
+          #- "--certificatesresolvers.ssl.acme.httpchallenge.entrypoint=http"
+          #- "--configfile=/config/traefik.yaml"
+      volumes:
+      - name: config
+        configMap:
+          name: traefik-ingress-controller
+      - name: varlogtraefik
+        hostPath:
+          path: /var/log/traefik
+      #- name: acme
+      #  persistentVolumeClaim:
+      #    claimName: traefik-acme-disk
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: traefik-dashboard
+  namespace: ingress
+spec:
+  entryPoints:
+    - websecure
+  routes:
+  - kind: Rule
+    match: Host(`ingress.waynimovil.com`)
+    services:
+    - kind: TraefikService
+      name: api@internal
+    middlewares:
+      - name: auth
+        namespace: ingress
+      - name: errorpage
+        namespace: ingress
+#      - name: redirect-https
+#        namespace: ingress
+  #tls:
+  #  certResolver: le
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: errorpage
+  namespace: ingress
+spec:
+  errors:
+    status:
+      - "500-599"
+      - "404"
+    query: /{status}.html
+    service:
+      name: error-pages
+      namespace: ingress
+      port: 80
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: http-to-https 
+  namespace: ingress
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: HostRegexp(`{any:.+}`)
+      kind: Rule 
+      services:
+      - kind: TraefikService
+        name: api@internal
+      middlewares:
+        - name: redirect-https
+          namespace: ingress
+#---
+#apiVersion: v1
+#kind: Service
+#metadata:
+#  name: traefik-nlb
+#  namespace: ingress
+#  labels:
+#    app: traefik
+#    chart: "traefik-2.2.1"
+#    release: "traefik-ingress-controller"
+#  annotations:
+#    service.beta.kubernetes.io/external-traffic: OnlyLocal
+#    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: http
+#    service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval: "300"
+#    service.beta.kubernetes.io/aws-load-balancer-type: nlb
+#    #service.beta.kubernetes.io/aws-load-balancer-connection-idle-timeout: "250"
+#    #service.beta.kubernetes.io/aws-load-balancer-internal: "true"
+#    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:us-west-2:093545766926:certificate/8611ff7d-f092-4dc4-b41a-038feb1e16e4
+#    service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "443,8443"
+#    service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+#    service.beta.kubernetes.io/aws-load-balancer-proxy-protocol: "*"
+#spec:
+#  type: LoadBalancer
+#  externalTrafficPolicy: Cluster
+#  selector:
+#    app: traefik
+#    release: traefik-ingress-controller
+#  ports:
+#  - port: 80
+#    name: web
+#    targetPort: "web"
+#  - port: 443
+#    name: websecure
+#    targetPort: "websecure"
+#  - port: 8080
+#    name: admin
+#    targetPort: "traefik"

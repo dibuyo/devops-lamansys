@@ -1,0 +1,17 @@
+kubernetes:latest
+workflow-job:latest
+workflow-aggregator:latest
+workflow-support:latest
+credentials-binding:latest
+git:latest
+docker-commons:latest
+docker-workflow:latest
+github:latest
+pipeline-aws:latest
+pipeline-github:latest
+blueocean:latest
+ssh:latest
+com.cloudbees.jenkins.plugins.amazonecr:latest
+com.amazonaws:latest
+org.apache.http.wire:latest
+org.jenkinsci.plugins.docker.workflow:latest

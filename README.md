@@ -325,3 +325,33 @@ docker run -d --restart=unless-stopped \
   --privileged \
   rancher/rancher:latest
 ```
+
+### Como instalar Prometheus con Helm
+
+Crear un namespace que se llame metrics. Y luego instalar con Helm
+
+```bash
+kubectl create namespace metrics
+
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+
+kubectl create namespace metrics
+
+helm install -n metrics prometheus prometheus-community/prometheus
+
+kubectl expose service prometheus-server --type=NodePort --target-port=9090 --name=prometheus-server-np
+
+minikube service prometheus-server-np
+```
+
+### Como instalar Grafana con Helm
+
+```bash
+helm repo add bitnami https://charts.bitnami.com/bitnami
+
+helm install grafana bitnami/grafana
+
+kubectl expose service grafana --type=NodePort --target-port=3000 --name=grafana-np
+
+minikube service -n metrics grafana-np
+```
